@@ -71,6 +71,10 @@ public class ChatClient extends AbstractClient
   {
     try
     {
+    	if(message.startsWith("#")) {
+    		handleCommand(message);
+    	}
+    	else
       sendToServer(message);
     }
     catch(IOException e)
@@ -80,7 +84,50 @@ public class ChatClient extends AbstractClient
       quit();
     }
   }
-  
+  //performs operations given by input from the list of commands
+  private void handleCommand(String command)  {
+	  if(command.equals("#quit")) {
+		  quit();
+	  }
+	  else if(command.equals("#logoff")) {
+		  try {
+			closeConnection();
+		  } catch (IOException e) {}
+	  }
+	  else if(command.startsWith("#sethost")) {
+		  if(!isConnected()) {
+		  setHost(command.substring(9));
+		  }
+		  else
+			  clientUI.display("You are currently logged in. You must log out to change the host");
+	  }
+	  else if(command.startsWith("#setport")) {
+		  if(!isConnected()) {
+			  setPort(Integer.parseInt(command.substring(9)));
+			  }
+			  else
+				  clientUI.display("You are currently logged in. You must log out to change the port");
+	  }
+	  else if(command.equals("#login")) {
+		  if(isConnected()) {
+			  clientUI.display("You are currently logged in. You must log out to change the port");
+
+		  } else
+			try {
+				openConnection();
+			} catch (IOException e) {}
+		  
+	  }
+	  else if(command.equals("#gethost")) {
+		  clientUI.display("The host is: "+ getHost());
+	  }
+	  else if(command.equals("#getport")) {
+		  clientUI.display("The port is: "+ getPort());
+	  }
+	  else
+		  clientUI.display("Error this is not a valid command");
+  }
+
   /**
    * This method terminates the client.
    */
@@ -93,5 +140,30 @@ public class ChatClient extends AbstractClient
     catch(IOException e) {}
     System.exit(0);
   }
+  
+  /**
+	 * Implements the hook method called each time an exception is thrown by the client's
+	 * thread that is waiting for messages from the server. The method may be
+	 * overridden by subclasses.
+	 * 
+	 * @param exception
+	 *            the exception raised.
+	 */
+  @Override
+	protected void connectionException(Exception exception) {
+	  clientUI.display("The server has shut down");
+	  quit();
+	}
+  
+  /**
+	 * Implements the method called after the connection has been closed. The default
+	 * implementation does nothing. The method may be overriden by subclasses to
+	 * perform special processing such as cleaning up and terminating, or
+	 * attempting to reconnect.
+	 */
+  @Override
+	protected void connectionClosed() {
+	  clientUI.display("Connection closed");
+	}
 }
 //End of ChatClient class
