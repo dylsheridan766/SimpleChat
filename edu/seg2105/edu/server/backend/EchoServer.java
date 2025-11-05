@@ -22,6 +22,7 @@ import ocsf.server.*;
  */
 public class EchoServer extends AbstractServer 
 {
+
   //Class variables *************************************************
   
   /**
@@ -51,10 +52,30 @@ public class EchoServer extends AbstractServer
    * @param client The connection from which the message originated.
    */
   public void handleMessageFromClient
-    (Object msg, ConnectionToClient client)
-  {
-    System.out.println("Message received: " + msg + " from " + client);
-    this.sendToAllClients(msg);
+    (Object msg, ConnectionToClient client) {
+	  String logID=(String) client.getInfo("logID");
+    System.out.println("Message received: " + msg + " from " + logID);
+    String currentStatus = (String) client.getInfo("loginStatus");
+    if(((String) msg).startsWith("#login")) {
+    	if (currentStatus != null && currentStatus.equals("logged_in")) {
+    		try {
+				client.sendToClient("Error login can only be the first command");
+				client.close();
+			} catch (IOException e) {} 
+    	
+    	}
+    	//splits the message to get the name
+    	String[] msgparts =((String) msg).split(" ");
+    	 logID = msgparts[1];
+    	client.setInfo("logID", logID);
+    	client.setInfo("loginStatus", "logged_in");
+        System.out.println(logID +" Has logged on");
+
+    }
+    else {
+    	 logID = (String) client.getInfo("logID");
+    this.sendToAllClients(logID + "> " + msg);
+    }
   }
     
   /**
@@ -192,11 +213,13 @@ public class EchoServer extends AbstractServer
   @Override
 	protected void clientConnected(ConnectionToClient client) {
 //prints a message when a client connects
+	  client.setInfo("loginStatus", "not_logged");
   	System.out.println("A client has connected to the server!");  
   }
   @Override
   synchronized protected void clientDisconnected(ConnectionToClient client) {
-	  	System.out.println("A client has disconnected to the server!");  
+	  String logID = (String) client.getInfo("logID");
+	  	System.out.println(logID+" has disconnected.");  
 
 	  // Since we don't track which ID belongs to this client directly,
 		// remove by value.
